@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG,                                        
     format='%(asctime)s.%(msecs)03d %(levelname)s:%(module)s:%(funcName)s: %(message)s', \
     datefmt="%Y-%m-%d %H:%M:%S")
 
+
 async def fetch_page(session, host):
     await asyncio.sleep(random.randint(0, 25) * 0.1)
     start = time.time()
@@ -82,6 +83,7 @@ async def asynchronous(urls=None, filter=None):
 
     return qualified_devices
 
+
 def url_generator(network=None, path=''):
     # TODO: add try
     network_object = ipaddress.ip_network(network)
@@ -99,14 +101,13 @@ def url_generator(network=None, path=''):
     return (urlunsplit(('http',str(ip),path,'','')) for ip in network_hosts)
 
 
-#
-#
-#
-def main():
-    print('Starting')
+def survey(network=None, path='', filter='', log=True):
+    # FIXME: filter='' doesnt return gateway
+    # TODO: parameter order?
+    # TODO: remove log parameter
     network_scan = asyncio.ensure_future(asynchronous(
-        urls=url_generator(network=NETWORK, path='index.html'),
-        filter=re.compile('(P|p)hilips'))
+        urls=url_generator(network=network, path=path),
+        filter=re.compile(filter))
         )
     ioloop = asyncio.get_event_loop()
     ioloop.run_until_complete(network_scan)
@@ -114,12 +115,39 @@ def main():
     # http://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
     ioloop.run_until_complete(asyncio.sleep(0))
     ioloop.close()
+    return network_scan.result()
 
-    print(network_scan.result())
+
+def cli():
+    import argparse
+    parser = argparse.ArgumentParser(description="Search 'network' for hosts with a \
+    response to 'path' that matches 'filter'")
+    parser.add_argument('network', help='IP address with optional mask, e.g. 192.168.0.0/24')
+    parser.add_argument('-p', '--path', help='URL path at host, e.g. index.html',
+        default='')
+    # TODO: handle special characters for re's other than quoting?
+    parser.add_argument('-f', '--filter', help='Filter in regular expression syntax',
+        default='')
+    parser.add_argument('-l', '--log', help='Enable logging', action='store_true')
+    args = parser.parse_args()
+    if not args.log:
+        logging.disable(logging.CRITICAL)
+    logging.debug('%s', args)
+    print('Scanning, please wait ...')
+    # TODO: this also forces the log parameter into survey()
+    result = survey(**vars(args))
+    print('Found {} match(es) for {} on {}'.format(len(result), args.filter, args.network))
+    result.sort()   # FIXME: fix sort
+    for x in result:
+        print(x)
+
 
 if __name__ == '__main__':
     # NETWORK = '216.164.167.16/28'   # kiosk
     # NETWORK = '10.161.129.0/24'     # work lan
     # NETWORK = '10.161.129.197'        # single
     NETWORK = '192.168.0.0/24'      # home lan
-    main()
+    # filter=re.compile('(P|p)hilips'))
+    # result = survey(NETWORK)
+    # print(result)
+    cli()
