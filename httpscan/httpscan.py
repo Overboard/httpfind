@@ -1,3 +1,5 @@
+""" HTTPScan - search subnet for HTTP servers that match a regular expression """
+
 import time
 import random
 import asyncio
@@ -9,17 +11,13 @@ import ipaddress
 from urllib.parse import urlunsplit, urlsplit
 import re
 
-DEFAULT_TIMEOUT = 10
-
-logging.basicConfig(level=logging.DEBUG,                                                 \
-    format='%(asctime)s.%(msecs)03d %(levelname)s:%(module)s:%(funcName)s: %(message)s', \
-    datefmt="%Y-%m-%d %H:%M:%S")
+logger = logging.getLogger(__name__)
 
 
 async def fetch_page(session, host):
     await asyncio.sleep(random.randint(0, 25) * 0.1)
     start = time.time()
-    logging.debug('Fetch from {}'.format(host))
+    logger.info('Fetch from {}'.format(host))
 
     try:
         response = await session.get(host, allow_redirects=False)
@@ -51,16 +49,16 @@ async def fetch_page(session, host):
             results_tuple = (host, 'found', text_response) # TODO: add response.headers?
         response.close()
 
-    logging.debug('Recvd from {} after {:.2f}s'.format(host, time.time() - start))
+    logger.info('Recvd from {} after {:.2f}s'.format(host, time.time() - start))
     return results_tuple
 
 
-async def asynchronous(urls=None, filter=None):
+async def asynchronous(urls=None, regex_filter=None):
     http_devices = {}
     qualified_devices = []
     connection = aiohttp.TCPConnector(limit=0)
     async with aiohttp.ClientSession(connector=connection, 
-        conn_timeout=10, raise_for_status=True) as session:
+        conn_timeout=5, raise_for_status=True) as session:
         
         futures = [fetch_page(session, url) for url in urls]
 
@@ -68,8 +66,8 @@ async def asynchronous(urls=None, filter=None):
             response = await future
             if 'found' in response[1]:
                 http_devices[response[0]] = response[2]
-                logging.debug('Processed %s', response[0])
-                if filter.search(response[2]):
+                logger.debug('Processed %s', response[0])
+                if regex_filter.search(response[2]):
                     qualified_devices.append(urlsplit(response[0]).netloc)
 
     # print('The following responded to HTTP:')
@@ -89,7 +87,7 @@ def url_generator(network=None, path=''):
     network_object = ipaddress.ip_network(network)
     if network_object.num_addresses > 256:
         # will need to batch process this case otherwise we run out of selectors
-        logging.error('Scan limited to 256 addresses, requested %d.', network_object.num_addresses)
+        logger.error('Scan limited to 256 addresses, requested %d.', network_object.num_addresses)
         raise NotImplementedError
     elif network_object.num_addresses > 1:
         # async request upto 256 hosts
@@ -101,13 +99,16 @@ def url_generator(network=None, path=''):
     return (urlunsplit(('http',str(ip),path,'','')) for ip in network_hosts)
 
 
-def survey(network=None, path='', filter='', log=True):
+def survey(network=None, path='', pattern='', log=False):
     # FIXME: filter='' doesnt return gateway
-    # TODO: parameter order?
-    # TODO: remove log parameter
+    if log:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.CRITICAL)
+
     network_scan = asyncio.ensure_future(asynchronous(
         urls=url_generator(network=network, path=path),
-        filter=re.compile(filter))
+        regex_filter=re.compile(pattern))
         )
     ioloop = asyncio.get_event_loop()
     ioloop.run_until_complete(network_scan)
@@ -119,35 +120,42 @@ def survey(network=None, path='', filter='', log=True):
 
 
 def cli():
+    """ Command line interface """
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter(
+        '%(asctime)s.%(msecs)03d %(levelname)s: %(message)s',
+        datefmt="%Y-%m-%d %H:%M:%S"
+    ))
+    logger.addHandler(ch)
+
     import argparse
     parser = argparse.ArgumentParser(description="Search 'network' for hosts with a \
     response to 'path' that matches 'filter'")
     parser.add_argument('network', help='IP address with optional mask, e.g. 192.168.0.0/24')
     parser.add_argument('-p', '--path', help='URL path at host, e.g. index.html',
         default='')
-    # TODO: handle special characters for re's other than quoting?
-    parser.add_argument('-f', '--filter', help='Filter in regular expression syntax',
-        default='')
+    parser.add_argument('-f', '--filter', help='Regular expression pattern for filter',
+        dest='pattern', default='')
     parser.add_argument('-l', '--log', help='Enable logging', action='store_true')
     args = parser.parse_args()
-    if not args.log:
-        logging.disable(logging.CRITICAL)
-    logging.debug('%s', args)
     print('Scanning, please wait ...')
-    # TODO: this also forces the log parameter into survey()
     result = survey(**vars(args))
-    print('Found {} match(es) for {} on {}'.format(len(result), args.filter, args.network))
+    print('Found {} match(es) for {} on {}'.format(len(result), args.pattern, args.network))
     result.sort()   # FIXME: fix sort
     for x in result:
         print(x)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG,                                                 \
+        format='%(asctime)s.%(msecs)03d %(levelname)s:%(module)s:%(funcName)s: %(message)s', \
+        datefmt="%H:%M:%S")
+
     # NETWORK = '216.164.167.16/28'   # kiosk
     # NETWORK = '10.161.129.0/24'     # work lan
     # NETWORK = '10.161.129.197'        # single
     NETWORK = '192.168.0.0/24'      # home lan
-    # filter=re.compile('(P|p)hilips'))
-    # result = survey(NETWORK)
-    # print(result)
-    cli()
+    result = survey(NETWORK, 
+        # pattern=re.compile('(P|p)hilips'),
+        log=True)
+    print(result)
