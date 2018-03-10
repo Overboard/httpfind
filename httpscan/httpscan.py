@@ -23,6 +23,10 @@ async def fetch_page(session, host):
         response = await session.get(host, allow_redirects=False)
     except aiohttp.ClientResponseError as err:
         # likely a 404 implying HTTP but no page
+        # likely a 401 implying HTTP but no access
+        # FIXME: for instance, a gateway
+        # headers are available via err.headers()
+        # https://multidict.readthedocs.io/en/stable/multidict.html#multidict.CIMultiDict
         results_tuple = (host, 'no page', err)
     except aiohttp.ClientConnectorError as err:
         # likely device at IP but no HTTP server
@@ -100,7 +104,6 @@ def url_generator(network=None, path=''):
 
 
 def survey(network=None, path='', pattern='', log=False):
-    # FIXME: filter='' doesnt return gateway
     if log:
         logger.setLevel(logging.DEBUG)
     else:
@@ -141,8 +144,7 @@ def cli():
     print('Scanning, please wait ...')
     result = survey(**vars(args))
     print('Found {} match(es) for {} on {}'.format(len(result), args.pattern, args.network))
-    result.sort()   # FIXME: fix sort
-    for x in result:
+    for x in sorted(result, key=ipaddress.ip_address):
         print(x)
 
 
@@ -158,4 +160,4 @@ if __name__ == '__main__':
     result = survey(NETWORK, 
         # pattern=re.compile('(P|p)hilips'),
         log=True)
-    print(result)
+    print(sorted(result, key=ipaddress.ip_address))
