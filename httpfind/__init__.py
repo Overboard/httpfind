@@ -1,2 +1,2 @@
 """ HTTPScan - search subnet for HTTP servers that match a regualr expression """
-from .httpscan import survey, cli
+from .httpfind import survey, cli

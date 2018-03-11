@@ -1,4 +1,4 @@
 """ Demo file of use """
-from httpscan import cli
+from httpfind import cli
 
 cli()

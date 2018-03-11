@@ -1,0 +1,19 @@
+Features:
+    ☐ Support networks larger than 256 addresses
+    ☐ Support filtering against headers
+    ☐ Support IPv6
+    ☐ Parameterize connection timout
+
+Issues:
+    ☐ 1 - Cannot evaluate device that replies with 401 (use headers instead?)
+
+Testing:
+    ☐ Decide if unit tests are useful
+    ☐ Add tests
+
+Deployment:
+    ☐ Add readme.md
+    ☐ Automate md->rst conversion
+    ☐ file for pip setup
+    ☐ entry point for cli()
+    
