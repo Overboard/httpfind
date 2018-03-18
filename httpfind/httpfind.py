@@ -149,7 +149,8 @@ def survey(network=None, path='', pattern='', log=False):
     # Zero-sleep to allow underlying connections to close
     # http://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
     ioloop.run_until_complete(asyncio.sleep(0))
-    ioloop.close()
+    # ioloop.close()  # don't close the loop, so it's available for re-use 
+    # https://stackoverflow.com/questions/45010178/how-to-use-asyncio-event-loop-in-library-function
     return sorted(network_scan.result(), key=lambda x: ipaddress.ip_address(x.hostname))
 
 

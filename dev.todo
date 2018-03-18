@@ -6,6 +6,7 @@ Features:
 
 Issues:
     ☐ 1 - Cannot evaluate device that replies with 401 (use headers instead?)
+    ☐ 2 - No means to close event loop.  Consider optional context manager.
 
 Testing:
     ☐ Decide if unit tests are useful
