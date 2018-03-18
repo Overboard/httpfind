@@ -16,6 +16,7 @@ setup(
     version='1.0.0',
     url='https://github.com/Overboard/httpfind',
     author='Overboard',
+    author_email='amwroute-git@yahoo.com',
     license='MIT',
 
     classifiers=[

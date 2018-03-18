@@ -16,11 +16,9 @@ and it also includes a convenient command line interface.
 pip install httpfind
 ```
 
-## Operation
+## Examples
 
-### Examples
-
-#### Basic import example
+Basic import example
 
 ```python
 import httpfind
@@ -44,7 +42,7 @@ Yields
 ['192.168.0.190', '192.168.0.191', '192.168.0.192']
 ```
 
-#### Command line example
+Command line example
 
 ```shell
 $> httpfind -h
@@ -70,17 +68,17 @@ Found 3 matches for Access Point on 192.168.0.0/24
 192.168.0.192
 ```
 
-### Parameters
+## Parameters
 
 `def survey(network=None, path='', pattern='', log=False):`
 
-`network` - IP address and subnet mask compatible with
+* `network` - IP address and subnet mask compatible with
 [ipaddress library](https://docs.python.org/3/library/ipaddress.html#ipaddress.ip_network)
-`path` - Path portion of a URL as defined by
+* `path` - Path portion of a URL as defined by
 [url(un)split](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlsplit)
-`pattern` - A regular expression pattern compatible with
+* `pattern` - A regular expression pattern compatible with
 [re.compile](https://docs.python.org/3/library/re.html#re.compile)
-`log` -  boolean to control logging level
+* `log` -  boolean to control logging level
 
 Consequently, the network can be defined in either subnet mask (x.x.x.x/255.255.255.0)
 or CIDR notation (x.x.x.x/24).  Presently, *httpfind* only scans networks of upto 256
@@ -93,7 +91,7 @@ Software Foundation.  For the simple cases, using the default or '' will match a
 pages while a word such as 'Access' will match if it's found in the returned HTML
 provided it's the same case.
 
-### Performance
+## Performance
 
 As *discoverhue* utilizes the excellent [aiohttp](http://aiohttp.readthedocs.io/en/stable/)
 package, requests are sent simultaneously rather than iteratively.  More accurately,
