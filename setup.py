@@ -13,7 +13,7 @@ setup(
     name='httpfind',
     description='Search network for HTTP servers using a regular expression filter',
     long_description=long_description,
-    version='1.0.0',
+    version='1.0.1',
     url='https://github.com/Overboard/httpfind',
     author='Overboard',
     author_email='amwroute-git@yahoo.com',
