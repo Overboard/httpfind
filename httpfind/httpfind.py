@@ -73,6 +73,12 @@ async def asynchronous(urls=None, re_filter=None):
     `re_filter` - a compiled regular expression
     [object](https://docs.python.org/3/library/re.html#re-objects)
     """
+    class _URLBase(str):
+        """ Convenient access to hostname (ip) portion of the URL """
+        @property
+        def hostname(self):
+            return urlsplit(self).hostname
+
     http_devices = {}
     qualified_devices = []
     connection = aiohttp.TCPConnector(limit=0)
@@ -87,7 +93,7 @@ async def asynchronous(urls=None, re_filter=None):
                 http_devices[response[0]] = response[2]
                 logger.debug('Processed %s', response[0])
                 if re_filter.search(response[2]):
-                    qualified_devices.append(urlsplit(response[0]).netloc)
+                    qualified_devices.append(_URLBase(response[0]))
 
     # print('The following responded to HTTP:')
     # for x in http_devices.keys():
@@ -144,7 +150,7 @@ def survey(network=None, path='', pattern='', log=False):
     # http://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
     ioloop.run_until_complete(asyncio.sleep(0))
     ioloop.close()
-    return network_scan.result()
+    return sorted(network_scan.result(), key=lambda x: ipaddress.ip_address(x.hostname))
 
 
 def cli():
@@ -168,9 +174,10 @@ def cli():
     args = parser.parse_args()
     print('Scanning, please wait ...')
     result = survey(**vars(args))
-    print('Found {} match(es) for {} on {}'.format(len(result), args.pattern, args.network))
-    for x in sorted(result, key=ipaddress.ip_address):
-        print(x)
+    print('Found {} match{}{}{} on {}'.format(len(result), 'es' if len(result)!=1 else '',
+        ' for ' if args.pattern else '', args.pattern, args.network))
+    for x in result:
+        print(x.hostname)
 
 
 if __name__ == '__main__':
@@ -182,7 +189,7 @@ if __name__ == '__main__':
     # NETWORK = '10.161.129.0/24'     # work lan
     # NETWORK = '10.161.129.197'        # single
     NETWORK = '192.168.0.0/24'      # home lan
-    result = survey(NETWORK, 
+    result = survey(NETWORK,
         # pattern=re.compile('(P|p)hilips'),
         log=True)
-    print(sorted(result, key=ipaddress.ip_address))
+    print(result)
